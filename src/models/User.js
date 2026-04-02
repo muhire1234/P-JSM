@@ -31,22 +31,21 @@ const UserSchema = new mongoose.Schema({
 { timestamps: true });
 
 // Password hashing before save
-UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+UserSchema.pre('save', async function() {
+  if (!this.isModified('password')) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
-const hashPasswordInUpdate = async function(next) {
+const hashPasswordInUpdate = async function() {
   const update = this.getUpdate();
-  if (!update) return next();
+  if (!update) return;
 
   const directPassword = update.password;
   const setPassword = update.$set && update.$set.password;
   const newPassword = directPassword || setPassword;
 
-  if (!newPassword) return next();
+  if (!newPassword) return;
 
   const salt = await bcrypt.genSalt(10);
   const hashed = await bcrypt.hash(newPassword, salt);
@@ -55,11 +54,12 @@ const hashPasswordInUpdate = async function(next) {
   if (update.$set && update.$set.password) update.$set.password = hashed;
 
   this.setUpdate(update);
-  next();
 };
 
 UserSchema.pre('findOneAndUpdate', hashPasswordInUpdate);
 UserSchema.pre('updateOne', hashPasswordInUpdate);
+
+UserSchema.index({ schoolId: 1, role: 1 });
 
 // Password verification method
 UserSchema.methods.matchPassword = async function(enteredPassword) {

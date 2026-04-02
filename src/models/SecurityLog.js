@@ -21,4 +21,6 @@ const SecurityLogSchema = new mongoose.Schema({
   returnedAt: { type: Date }
 }, { timestamps: true });
 
+SecurityLogSchema.index({ permissionId: 1, returnedAt: 1 });
+
 module.exports = mongoose.model('SecurityLog', SecurityLogSchema);

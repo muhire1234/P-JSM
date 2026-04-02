@@ -1,13 +1,14 @@
 // src/controllers/permissionController.js
 const Permission = require('../models/Permission');
 const AuditLog = require('../models/AuditLog');
+const AppError = require('../errors/AppError');
 
 const createPermission = async (req, res) => {
   const { studentId, type, description } = req.body;
 
   // RBAC: only DOD
   if (req.user.role !== 'DOD') {
-    return res.status(403).json({ message: 'Forbidden' });
+    throw new AppError('Forbidden', 403);
   }
 
   // Set initial status

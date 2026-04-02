@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Role = require('../models/Role');
 const AuditLog = require('../models/AuditLog');
+const AppError = require('../errors/AppError');
 
 // Create a new user (Admin only)
 const createUser = async (req, res) => {
@@ -8,21 +9,15 @@ const createUser = async (req, res) => {
   const normalizedEmail = (email || '').toLowerCase().trim();
 
   // Check required fields
-  if (!name || !email || !password || !role || !schoolId) {
-    return res.status(400).json({ message: 'All fields are required' });
-  }
+  if (!name || !email || !password || !role || !schoolId) throw new AppError('All fields are required', 400);
 
   // Check if user already exists
   const existingUser = await User.findOne({ email: normalizedEmail });
-  if (existingUser) {
-    return res.status(400).json({ message: 'User already exists' });
-  }
+  if (existingUser) throw new AppError('User already exists', 400);
 
   // Optional: check if role exists
   const roleExists = await Role.findOne({ name: role });
-  if (!roleExists) {
-    return res.status(400).json({ message: 'Invalid role' });
-  }
+  if (!roleExists) throw new AppError('Invalid role', 400);
 
   // Create user
   const user = await User.create({
@@ -56,10 +51,10 @@ const getUsers = async (req, res) => {
 // Optional: create a role (Admin)
 const createRole = async (req, res) => {
   const { name } = req.body;
-  if (!name) return res.status(400).json({ message: 'Role name required' });
+  if (!name) throw new AppError('Role name required', 400);
 
   const existing = await Role.findOne({ name });
-  if (existing) return res.status(400).json({ message: 'Role already exists' });
+  if (existing) throw new AppError('Role already exists', 400);
 
   const role = await Role.create({ name });
   res.status(201).json(role);
