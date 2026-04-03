@@ -1,12 +1,31 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
+const morgan = require('morgan');
 require('dotenv').config();
 require('express-async-errors');
+const AppError = require('./src/errors/AppError');
+const { notFound, errorHandler } = require('./src/middleware/errorMiddleware');
 
 const app = express();
 
 // Middleware
 app.use(express.json());
+app.use(cors());
+app.use(morgan('dev'));
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  next();
+});
+
+if (!process.env.MONGO_URI) {
+  throw new AppError('MONGO_URI is required in environment', 500);
+}
+if (!process.env.JWT_SECRET) {
+  throw new AppError('JWT_SECRET is required in environment', 500);
+}
 
 // 🔥 CONNECT TO MONGODB
 mongoose.connect(process.env.MONGO_URI)
@@ -40,11 +59,12 @@ app.use('/api/admin', adminRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
 });
 
-// Global Error Handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!', error: err.message });
-});
+app.use(notFound);
+app.use(errorHandler);

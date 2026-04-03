@@ -55,4 +55,6 @@ const PermissionSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
+PermissionSchema.index({ schoolId: 1, status: 1, type: 1 });
+
 module.exports = mongoose.model('Permission', PermissionSchema);

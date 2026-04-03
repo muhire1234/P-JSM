@@ -1,22 +1,23 @@
 const Permission = require('../models/Permission');
 const AuditLog = require('../models/AuditLog');
+const AppError = require('../errors/AppError');
 
 const markAllowedExam = async (req, res) => {
   const { permissionId } = req.body;
 
   // RBAC: only Teacher
   if (req.user.role !== 'Teacher') {
-    return res.status(403).json({ message: 'Forbidden' });
+    throw new AppError('Forbidden', 403);
   }
 
-  const permission = await Permission.findById(permissionId);
+  const permission = await Permission.findOne({ _id: permissionId, schoolId: req.user.schoolId });
   if (!permission || permission.type !== 'MISSED_EXAM') {
-    return res.status(400).json({ message: 'Invalid MISSED_EXAM permission' });
+    throw new AppError('Invalid MISSED_EXAM permission', 400);
   }
 
   // Teacher can only act on approved permissions
   if (permission.status !== 'APPROVED') {
-    return res.status(400).json({ message: 'Permission not approved by DOS' });
+    throw new AppError('Permission not approved by DOS', 400);
   }
 
   // Update approvals array

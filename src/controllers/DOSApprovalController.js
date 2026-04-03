@@ -1,22 +1,27 @@
 const Permission = require('../models/Permission');
 const AuditLog = require('../models/AuditLog');
+const AppError = require('../errors/AppError');
 
 const approveMissedExam = async (req, res) => {
   const { permissionId, action } = req.body; // action = 'APPROVE' | 'REJECT'
 
   // RBAC: only DOS
   if (req.user.role !== 'DOS') {
-    return res.status(403).json({ message: 'Forbidden' });
+    throw new AppError('Forbidden', 403);
   }
 
-  const permission = await Permission.findById(permissionId);
+  if (!['APPROVE', 'REJECT'].includes(action)) {
+    throw new AppError('Invalid action', 400);
+  }
+
+  const permission = await Permission.findOne({ _id: permissionId, schoolId: req.user.schoolId });
   if (!permission || permission.type !== 'MISSED_EXAM') {
-    return res.status(400).json({ message: 'Invalid MISSED_EXAM permission' });
+    throw new AppError('Invalid MISSED_EXAM permission', 400);
   }
 
   // Only pending permissions can be approved/rejected
   if (permission.status !== 'PENDING_DOS') {
-    return res.status(400).json({ message: 'Permission already processed' });
+    throw new AppError('Permission already processed', 400);
   }
 
   const status = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
